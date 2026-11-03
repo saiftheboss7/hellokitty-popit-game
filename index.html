@@ -256,13 +256,40 @@ body.calm .rain svg { animation-duration: 4s; }
   document.getElementById("happyR").setAttribute("d", arc(eyes[1].x, eyes[1].y));
 
   // ---- sound ----
-  let ac = null;
-  const audio = () => {
-    if (!state.sound) return null;
+  // iOS Safari only starts audio from a finished tap, and its ring/silent switch mutes Web Audio
+  // unless the page asks for "playback" audio (older iOS: keep a silent media track playing).
+  let ac = null, keepAlive = null;
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  const silentWav = () => {
+    const n = 4000, buf = new Uint8Array(44 + n), v = new DataView(buf.buffer);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) buf[o + i] = s.charCodeAt(i); };
+    str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVEfmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, "data"); v.setUint32(40, n, true); buf.fill(128, 44);
+    let bin = ""; buf.forEach(b => { bin += String.fromCharCode(b); });
+    return "data:audio/wav;base64," + btoa(bin);
+  };
+  function unlock() {
+    if (!state.sound) return;
     try {
       if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state === "suspended") ac.resume();
-    } catch (e) { return null; }
+      if (ac.state !== "running") ac.resume();
+      const s = ac.createBufferSource();
+      s.buffer = ac.createBuffer(1, 1, 22050); s.connect(ac.destination); s.start(0);
+    } catch (e) {}
+    if (!navigator.audioSession) {
+      try {
+        if (!keepAlive) { keepAlive = new Audio(silentWav()); keepAlive.loop = true; keepAlive.setAttribute("playsinline", ""); }
+        if (keepAlive.paused) keepAlive.play().catch(() => {});
+      } catch (e) {}
+    }
+  }
+  ["pointerdown", "pointerup", "touchend", "click", "keydown"].forEach(t => window.addEventListener(t, unlock, { capture: true, passive: true }));
+  document.addEventListener("visibilitychange", () => { if (document.hidden && keepAlive) keepAlive.pause(); });
+  const audio = () => {
+    if (!state.sound || !ac) return null;
+    if (ac.state !== "running") { try { ac.resume(); } catch (e) {} }
     return ac;
   };
   function popSound(f, soft) {
@@ -455,7 +482,7 @@ body.calm .rain svg { animation-duration: 4s; }
     cBtn.setAttribute("aria-pressed", String(state.calm));
     document.body.classList.toggle("calm", state.calm);
   };
-  holdButton(sBtn, () => { state.sound = !state.sound; save(); sync(); if (state.sound) popSound(784); });
+  holdButton(sBtn, () => { state.sound = !state.sound; save(); sync(); if (state.sound) { unlock(); popSound(784); } else if (keepAlive) keepAlive.pause(); });
   holdButton(cBtn, () => { state.calm = !state.calm; save(); sync(); });
   holdButton(fBtn, async () => {
     try {
