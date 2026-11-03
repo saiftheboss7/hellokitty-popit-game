@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#FFE3EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; height: 100%; }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+[hidden] { display: none !important; }
+</style>
+<title>Kitty Bow Pop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+/* Layout: one full-screen toy. The kitty head IS the pop-it; tiny hold-to-use grown-up buttons tucked in a corner. */
+:root {
+  --bg: #FFE3EE;
+  --dot: #FFD0E1;
+  --ink: #3A2630;
+  --face: #FFFFFF;
+  --bow: #E5243B;
+  --nose: #FFC21A;
+  --soft: #B75C82;
+  --font-display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dot) 18%, transparent 19%), radial-gradient(var(--dot) 18%, transparent 19%);
+  background-size: 64px 64px;
+  background-position: 0 0, 32px 32px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+.stage {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 64px;
+  perspective: 1400px;
+}
+#toy { width: 100%; height: 100%; max-width: 1100px; display: block; overflow: visible; }
+
+/* bubbles */
+.bub { cursor: pointer; }
+.dome { transform-box: fill-box; transform-origin: center; transition: transform .22s cubic-bezier(.3,1.9,.5,1); }
+.bub.popped .dome { transform: scale(.88); }
+.bub .up { transition: opacity .12s; }
+.bub .down { opacity: 0; transition: opacity .12s; }
+.bub.popped .up { opacity: 0; }
+.bub.popped .down { opacity: 1; }
+.bub .shine { transition: opacity .12s; }
+.bub.popped .shine { opacity: 0; }
+.bub.jiggle .dome { animation: jiggle .35s ease; }
+.bub.invite .dome { animation: invite 1.2s ease-in-out 2; }
+@keyframes jiggle { 0%,100% { transform: scale(.88) } 30% { transform: scale(.8, .95) } 60% { transform: scale(.95, .82) } }
+@keyframes invite { 0%,100% { transform: scale(1) } 50% { transform: scale(1.14) } }
+
+#bow { transform-box: fill-box; transform-origin: center; }
+#bow.wiggle { animation: wiggle .5s ease; }
+@keyframes wiggle { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-12deg) scale(1.08) } 60% { transform: rotate(9deg) } }
+
+.happy { opacity: 0; transition: opacity .2s; }
+.celebrate .happy { opacity: 1; }
+.celebrate .eye { opacity: 0; }
+.eye { transition: opacity .2s; }
+
+/* celebration hearts */
+.rain { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.rain svg { position: absolute; bottom: -80px; animation: rise var(--t, 2.6s) cubic-bezier(.2,.6,.4,1) forwards; }
+@keyframes rise {
+  0% { transform: translate(0, 0) rotate(0) scale(.6); opacity: 0 }
+  10% { opacity: 1 }
+  100% { transform: translate(var(--dx, 0px), -115vh) rotate(var(--r, 20deg)) scale(1.1); opacity: .9 }
+}
+
+/* grown-up corner */
+.grownups {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 8px;
+}
+.grownups small { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); margin-right: 2px; }
+.hold {
+  position: relative; width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--soft); background: var(--face); color: var(--soft);
+  display: grid; place-items: center; padding: 0; cursor: pointer; opacity: .75;
+}
+.hold svg.icon { width: 20px; height: 20px; }
+.hold .ring { position: absolute; inset: -5px; width: 50px; height: 50px; transform: rotate(-90deg); pointer-events: none; }
+.hold .ring circle { fill: none; stroke: var(--bow); stroke-width: 4; stroke-dasharray: 138; stroke-dashoffset: 138; }
+.hold.charging .ring circle { transition: stroke-dashoffset .8s linear; stroke-dashoffset: 0; }
+.hold[aria-pressed="false"] { opacity: .4; }
+.hold:focus-visible { outline: 3px solid var(--bow); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dome, #bow { transition: none; animation: none !important; }
+}
+body.calm .rain svg { animation-duration: 4s; }
+</style>
+
+</head>
+<body>
+<div class="stage">
+  <svg id="toy" viewBox="-40 0 580 450" aria-label="Kitty pop-it toy. Tap the bubbles to pop them." role="img">
+    <defs>
+      <radialGradient id="g-up" cx="36%" cy="30%" r="75%">
+        <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+        <stop offset=".45" stop-color="#fff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".2"/>
+      </radialGradient>
+      <radialGradient id="g-down" cx="64%" cy="70%" r="80%">
+        <stop offset="0" stop-color="#fff" stop-opacity=".4"/>
+        <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".32"/>
+      </radialGradient>
+      <path id="heart" d="M0 6 C -14 -6 -8 -18 0 -10 C 8 -18 14 -6 0 6 Z"/>
+    </defs>
+
+    <g id="kitty">
+      <!-- whiskers -->
+      <g stroke="var(--ink)" stroke-width="7" stroke-linecap="round">
+        <line x1="40" y1="250" x2="-28" y2="232"/>
+        <line x1="36" y1="282" x2="-32" y2="284"/>
+        <line x1="42" y1="314" x2="-24" y2="336"/>
+        <line x1="460" y1="250" x2="528" y2="232"/>
+        <line x1="464" y1="282" x2="532" y2="284"/>
+        <line x1="458" y1="314" x2="524" y2="336"/>
+      </g>
+      <!-- ears -->
+      <g fill="var(--face)" stroke="var(--ink)" stroke-width="8" stroke-linejoin="round">
+        <path d="M62 196 L 72 42 L 196 112 Z"/>
+        <path d="M438 196 L 428 42 L 304 112 Z"/>
+      </g>
+      <!-- head -->
+      <ellipse cx="250" cy="262" rx="225" ry="172" fill="var(--face)" stroke="var(--ink)" stroke-width="8"/>
+      <g id="bubbles"></g>
+      <!-- happy eyes for celebrations -->
+      <g class="happy" fill="none" stroke="var(--ink)" stroke-width="9" stroke-linecap="round">
+        <path id="happyL" d=""/>
+        <path id="happyR" d=""/>
+      </g>
+      <!-- bow -->
+      <g id="bow" stroke="var(--ink)" stroke-width="7" stroke-linejoin="round">
+        <ellipse cx="364" cy="58" rx="46" ry="33" transform="rotate(24 364 58)" fill="var(--bow)"/>
+        <ellipse cx="452" cy="100" rx="46" ry="33" transform="rotate(24 452 100)" fill="var(--bow)"/>
+        <circle cx="408" cy="79" r="22" fill="var(--bow)"/>
+        <ellipse cx="400" cy="71" rx="7" ry="4" fill="#fff" stroke="none" opacity=".6"/>
+      </g>
+      <g id="fx" pointer-events="none"></g>
+    </g>
+  </svg>
+</div>
+
+<div class="rain" id="rain"></div>
+
+<div class="grownups" aria-label="Grown-up controls">
+  <small>Hold</small>
+  <button class="hold" id="btn-sound" aria-pressed="true" aria-label="Sound (press and hold to switch)">
+    <svg class="ring" viewBox="0 0 50 50"><circle cx="25" cy="25" r="22"/></svg>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path class="waves" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+  </button>
+  <button class="hold" id="btn-calm" aria-pressed="false" aria-label="Calm mode, softer sounds and fewer sparkles (press and hold to switch)">
+    <svg class="ring" viewBox="0 0 50 50"><circle cx="25" cy="25" r="22"/></svg>
+    <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+  </button>
+  <button class="hold" id="btn-full" aria-pressed="false" aria-label="Full screen (press and hold to switch)">
+    <svg class="ring" viewBox="0 0 50 50"><circle cx="25" cy="25" r="22"/></svg>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const R = 30, GAP = 70, ROW = 61;
+  const CX = 250, EYE_Y = 268, HEAD_CY = 262;
+  const ROW_COLORS = { "-2": "#FF7EB3", "-1": "#FF9A76", "0": "#FFD95A", "1": "#7FDDB0", "2": "#8EC9FF" };
+  // C major pentatonic, so any swipe sounds like a tune
+  const SCALE = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];
+
+  const state = { sound: true, calm: false, busy: false, lastTouch: Date.now() };
+  try { const s = JSON.parse(localStorage.getItem("kittypop") || "{}"); if (typeof s.sound === "boolean") state.sound = s.sound; if (typeof s.calm === "boolean") state.calm = s.calm; } catch (e) {}
+  const save = () => { try { localStorage.setItem("kittypop", JSON.stringify({ sound: state.sound, calm: state.calm })); } catch (e) {} };
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const shade = (hex, amt) => {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v * (1 + amt)))));
+    return "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+  };
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+
+  // ---- build the bubble grid inside the head ----
+  const layer = document.getElementById("bubbles");
+  const bubbles = [];
+  const ARX = 225 - R - 12, ARY = 172 - R - 12;
+  for (let k = -2; k <= 2; k++) {
+    const y = EYE_Y + k * ROW;
+    const off = (k % 2 === 0) ? GAP / 2 : 0;
+    for (let j = -4; j <= 4; j++) {
+      const x = CX + off + j * GAP;
+      if (off && j === 4) continue;
+      const dx = (x - CX) / ARX, dy = (y - HEAD_CY) / ARY;
+      if (dx * dx + dy * dy > 1) continue;
+      let kind = "plain";
+      if (k === 0 && Math.abs(x - CX) === 105) kind = "eye";
+      if (k === 1 && x === CX) kind = "nose";
+      bubbles.push({ x, y, k, kind });
+    }
+  }
+  bubbles.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  bubbles.forEach((b, i) => {
+    const color = kindColor(b);
+    const g = el("g", { class: "bub", "data-i": i, transform: `translate(${b.x} ${b.y})` }, layer);
+    const d = el("g", { class: "dome" }, g);
+    el("circle", { r: R + 6, fill: "transparent" }, d);
+    const rx = b.kind === "eye" ? 21 : b.kind === "nose" ? 29 : R;
+    const ry = b.kind === "eye" ? 30 : b.kind === "nose" ? 21 : R;
+    const stroke = b.kind === "plain" ? shade(color, -0.22) : "#3A2630";
+    const sw = b.kind === "nose" ? 6 : 4;
+    el("ellipse", { rx, ry, fill: color, stroke, "stroke-width": sw }, d);
+    el("ellipse", { class: "up", rx: rx - 3, ry: ry - 3, fill: "url(#g-up)" }, d);
+    el("ellipse", { class: "down", rx: rx - 3, ry: ry - 3, fill: "url(#g-down)" }, d);
+    el("ellipse", { class: "shine", cx: -rx * 0.35, cy: -ry * 0.42, rx: rx * 0.22, ry: ry * 0.13, fill: "#fff", opacity: b.kind === "eye" ? 0.75 : 0.85, transform: `rotate(-30 ${-rx * 0.35} ${-ry * 0.42})` }, d);
+    if (b.kind === "eye") d.classList.add("eye");
+    b.g = g; b.color = color; b.popped = false;
+    b.note = SCALE[Math.min(SCALE.length - 1, Math.max(0, Math.round((b.x - 40) / 70)))] * (b.k <= -1 ? 1.5 : b.k >= 1 ? 0.75 : 1);
+  });
+  function kindColor(b) {
+    if (b.kind === "eye") return "#3A2630";
+    if (b.kind === "nose") return "#FFC21A";
+    return ROW_COLORS[b.k];
+  }
+  const eyes = bubbles.filter(b => b.kind === "eye");
+  const arc = (x, y) => `M ${x - 20} ${y + 6} Q ${x} ${y - 22} ${x + 20} ${y + 6}`;
+  document.getElementById("happyL").setAttribute("d", arc(eyes[0].x, eyes[0].y));
+  document.getElementById("happyR").setAttribute("d", arc(eyes[1].x, eyes[1].y));
+
+  // ---- sound ----
+  let ac = null;
+  const audio = () => {
+    if (!state.sound) return null;
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === "suspended") ac.resume();
+    } catch (e) { return null; }
+    return ac;
+  };
+  function popSound(f, soft) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime, vol = (state.calm ? 0.16 : 0.32) * (soft ? 0.45 : 1);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(f * 1.9, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (soft ? 0.12 : 0.22));
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t + 0.25);
+    if (soft) return;
+    // tiny click on top, like silicone snapping
+    const len = Math.floor(a.sampleRate * 0.02), buf = a.createBuffer(1, len, a.sampleRate), ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const n = a.createBufferSource(), hp = a.createBiquadFilter(), ng = a.createGain();
+    n.buffer = buf; hp.type = "highpass"; hp.frequency.value = 1800; ng.gain.value = vol * 0.5;
+    n.connect(hp).connect(ng).connect(a.destination); n.start(t);
+  }
+  function jingle() {
+    const a = audio(); if (!a) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+    notes.forEach((f, i) => {
+      const t = a.currentTime + i * 0.13, o = a.createOscillator(), g = a.createGain();
+      o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(state.calm ? 0.12 : 0.22, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.4);
+    });
+  }
+  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+  // ---- effects ----
+  const fx = document.getElementById("fx");
+  function sparkle(b) {
+    if (reduced) return;
+    const count = state.calm ? 3 : 6;
+    for (let i = 0; i < count; i++) {
+      const h = el("use", { href: "#heart", fill: i % 2 ? b.color === "#3A2630" ? "#FF7EB3" : b.color : "#FF7EB3", stroke: "#3A2630", "stroke-width": 2 }, fx);
+      const ang = (Math.PI * 2 * i) / count + Math.random() * 0.6;
+      const dist = 46 + Math.random() * 26;
+      const tx = b.x + Math.cos(ang) * dist, ty = b.y + Math.sin(ang) * dist;
+      const anim = h.animate([
+        { transform: `translate(${b.x}px, ${b.y}px) scale(.3)`, opacity: 1 },
+        { transform: `translate(${tx}px, ${ty}px) scale(.9)`, opacity: 1, offset: 0.6 },
+        { transform: `translate(${tx}px, ${ty - 12}px) scale(.6)`, opacity: 0 }
+      ], { duration: 650, easing: "cubic-bezier(.2,.8,.3,1)" });
+      anim.onfinish = () => h.remove();
+    }
+  }
+  const bow = document.getElementById("bow");
+  function wiggleBow() {
+    if (reduced) return;
+    bow.classList.remove("wiggle"); void bow.getBoundingClientRect(); bow.classList.add("wiggle");
+  }
+  const rain = document.getElementById("rain");
+  function heartRain() {
+    const n = reduced ? 0 : state.calm ? 8 : 22;
+    const palette = ["#FF7EB3", "#E5243B", "#FFD95A", "#7FDDB0", "#8EC9FF", "#FF9A76"];
+    for (let i = 0; i < n; i++) {
+      const s = document.createElementNS(NS, "svg");
+      const size = 34 + Math.random() * 40;
+      s.setAttribute("viewBox", "-16 -20 32 30");
+      s.setAttribute("width", size); s.setAttribute("height", size);
+      s.style.left = (Math.random() * 100) + "vw";
+      s.style.animationDelay = (Math.random() * 0.9) + "s";
+      s.style.setProperty("--dx", (Math.random() * 120 - 60) + "px");
+      s.style.setProperty("--r", (Math.random() * 60 - 30) + "deg");
+      s.style.setProperty("--t", (2.2 + Math.random() * 1.4) + "s");
+      el("path", { d: "M0 6 C -14 -6 -8 -18 0 -10 C 8 -18 14 -6 0 6 Z", fill: palette[i % palette.length], stroke: "#3A2630", "stroke-width": 2 }, s);
+      rain.appendChild(s);
+      setTimeout(() => s.remove(), 5200);
+    }
+  }
+
+  // ---- play ----
+  const toy = document.getElementById("toy");
+  const kitty = document.getElementById("kitty");
+  function pop(b) {
+    if (state.busy) return;
+    if (b.popped) {
+      b.g.classList.remove("jiggle"); void b.g.getBoundingClientRect(); b.g.classList.add("jiggle");
+      popSound(b.note * 0.5, true);
+      return;
+    }
+    b.popped = true;
+    b.g.classList.remove("invite");
+    b.g.classList.add("popped");
+    popSound(b.note);
+    buzz(12);
+    sparkle(b);
+    wiggleBow();
+    if (bubbles.every(x => x.popped)) finish();
+  }
+  function finish() {
+    state.busy = true;
+    setTimeout(() => {
+      kitty.classList.add("celebrate");
+      jingle(); heartRain(); buzz([30, 60, 30]);
+    }, 250);
+    setTimeout(flip, state.calm ? 3200 : 2600);
+  }
+  function flip() {
+    const reset = () => {
+      kitty.classList.remove("celebrate");
+      bubbles.forEach(b => { b.popped = false; b.g.classList.remove("popped", "jiggle"); });
+    };
+    if (reduced || !toy.animate) { reset(); state.busy = false; return; }
+    const half = { duration: 300, easing: "ease-in", fill: "forwards" };
+    toy.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(90deg)" }], half).onfinish = () => {
+      reset();
+      toy.animate([{ transform: "rotateY(-90deg)" }, { transform: "rotateY(0deg)" }], { duration: 360, easing: "cubic-bezier(.3,1.5,.5,1)", fill: "forwards" })
+        .onfinish = () => { state.busy = false; };
+    };
+  }
+
+  // pointer: tap or swipe a finger across bubbles; many fingers at once is fine
+  const seen = new Map();
+  const bubbleAt = (x, y) => {
+    const t = document.elementFromPoint(x, y);
+    const g = t && t.closest && t.closest(".bub");
+    return g ? bubbles[+g.dataset.i] : null;
+  };
+  toy.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    wake();
+    state.lastTouch = Date.now();
+    const set = new Set(); seen.set(e.pointerId, set);
+    const b = bubbleAt(e.clientX, e.clientY);
+    if (b) { set.add(b); pop(b); }
+    else if (e.target.closest("#bow")) { wiggleBow(); popSound(1046.5, true); }
+  });
+  window.addEventListener("pointermove", e => {
+    const set = seen.get(e.pointerId); if (!set) return;
+    const b = bubbleAt(e.clientX, e.clientY);
+    if (b && !set.has(b)) { set.add(b); if (!b.popped) pop(b); }
+  });
+  const end = e => seen.delete(e.pointerId);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+  window.addEventListener("contextmenu", e => e.preventDefault());
+
+  // keyboard mashing on a laptop pops a random bubble
+  window.addEventListener("keydown", e => {
+    if (e.target.closest && e.target.closest(".hold")) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    e.preventDefault();
+    state.lastTouch = Date.now();
+    const left = bubbles.filter(b => !b.popped);
+    if (left.length) pop(left[Math.floor(Math.random() * left.length)]);
+  });
+
+  // after a quiet spell, one bubble gently bounces to invite a tap
+  setInterval(() => {
+    if (state.busy || Date.now() - state.lastTouch < 7000 || reduced) return;
+    const left = bubbles.filter(b => !b.popped);
+    if (!left.length) return;
+    const b = left[Math.floor(Math.random() * left.length)];
+    b.g.classList.remove("invite"); void b.g.getBoundingClientRect(); b.g.classList.add("invite");
+    state.lastTouch = Date.now() - 2000;
+  }, 1000);
+
+  // keep the screen awake while playing
+  let lock = null;
+  async function wake() {
+    if (lock || !("wakeLock" in navigator)) return;
+    try { lock = await navigator.wakeLock.request("screen"); lock.addEventListener("release", () => { lock = null; }); } catch (e) {}
+  }
+
+  // ---- grown-up buttons: press and hold so little hands don't flip them ----
+  function holdButton(btn, action) {
+    let timer = null;
+    const cancel = () => { clearTimeout(timer); timer = null; btn.classList.remove("charging"); };
+    btn.addEventListener("pointerdown", e => {
+      e.stopPropagation();
+      btn.classList.add("charging");
+      timer = setTimeout(() => { cancel(); action(); buzz(20); }, 800);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => btn.addEventListener(t, cancel));
+    btn.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); action(); } });
+  }
+  const sBtn = document.getElementById("btn-sound"), cBtn = document.getElementById("btn-calm"), fBtn = document.getElementById("btn-full");
+  const sync = () => {
+    sBtn.setAttribute("aria-pressed", String(state.sound));
+    sBtn.querySelector(".waves").style.display = state.sound ? "" : "none";
+    cBtn.setAttribute("aria-pressed", String(state.calm));
+    document.body.classList.toggle("calm", state.calm);
+  };
+  holdButton(sBtn, () => { state.sound = !state.sound; save(); sync(); if (state.sound) popSound(784); });
+  holdButton(cBtn, () => { state.calm = !state.calm; save(); sync(); });
+  holdButton(fBtn, async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch (e) {}
+  });
+  document.addEventListener("fullscreenchange", () => fBtn.setAttribute("aria-pressed", String(!!document.fullscreenElement)));
+  sync();
+})();
+</script>
+</body>
+</html>
