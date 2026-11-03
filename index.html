@@ -211,7 +211,7 @@ body.calm .rain svg { animation-duration: 4s; }
   // ---- build the bubble grid inside the head ----
   const layer = document.getElementById("bubbles");
   const bubbles = [];
-  const ARX = 225 - R - 12, ARY = 172 - R - 12;
+  const ARX = 225 - R - 12, ARY = 172 - R - 8;
   for (let k = -2; k <= 2; k++) {
     const y = EYE_Y + k * ROW;
     const off = (k % 2 === 0) ? GAP / 2 : 0;
